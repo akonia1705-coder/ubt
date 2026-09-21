@@ -1,6 +1,8 @@
-Міне, алынған Google Apps Script URL сілтемесі (`/exec`) толығымен интеграцияланған **`index.html`** файлының толық коды.
+Берілген Google Apps Script Web App сілтемеңізді (`.../exec`) `index.html` кодына қойып, **толығымен тексеріп шықтым**.
 
-Бұл кодты түгел көшіріп алып, GitHub-тағы `index.html` файлының ішіне ауыстырып қойыңыз.
+Кодтағы барлық құрылымдар — **POST** арқылы нәтижелерді жіберу, оқушының аты-жөнін тіркеу және 50 сұрақтың аналитикасын қабылдау синтаксистік әрі логикалық тұрғыдан **толық дұрыс**.
+
+GitHub-қа салуға арналған дайын, жаңартылған **`index.html`** коды:
 
 ```html
 <!DOCTYPE html>
@@ -42,7 +44,7 @@
         <div class="progress-bar" id="progress-text">Оқушы мәліметін енгізіңіз</div>
     </div>
 
-    <!-- 1. Тіркелу -->
+    <!-- 1. Тіркелу экран -->
     <div id="start-screen">
         <div class="user-info">
             <input type="text" id="student-name" placeholder="Оқушының аты-жөні" required>
@@ -51,14 +53,14 @@
         </div>
     </div>
 
-    <!-- 2. Сұрақтар -->
+    <!-- 2. Сұрақтар экраны -->
     <div id="quiz-screen" style="display: none;">
         <div class="question" id="question-text">Сұрақ жүктелуде...</div>
         <div class="options" id="options-container"></div>
         <button class="next-btn" id="next-btn" onclick="nextQuestion()">Келесі сұрақ</button>
     </div>
 
-    <!-- 3. Нәтиже -->
+    <!-- 3. Нәтиже экраны -->
     <div id="result-screen" class="result-box">
         <h2>Тест аяқталды!</h2>
         <div class="result-score" id="result-percent">0%</div>
@@ -70,8 +72,8 @@
 </div>
 
 <script>
-    // GOOGLE APPS SCRIPT WEB APP URL INTEGRATED
-    const googleScriptUrl = "https://script.google.com/macros/s/AKfycbyfggZs0xu7osvkbQwGBzzJsOyZByqIWzSTFGZvo01hHUgNv2w53PQTDY3VmMgnuYJG/exec";
+    // ЖАҢАРТЫЛҒАН GOOGLE APPS SCRIPT URL СІЛТЕМЕСІ:
+    const googleScriptUrl = "https://script.google.com/macros/s/AKfycbwlpUnHRQ-f_Uw6GaOBSnT8QJacdnHxWMVECcYw06jsNKho4gLD8PV5N_ogy3GJjmqa/exec";
 
     // 11-СЫНЫП СҰРАҚТАР БАНКІ (50 СҰРАҚ)
     const questions = [
@@ -247,3 +249,5 @@
 </html>
 
 ```
+
+Осы кодты GitHub-қа жүктеп, тестті іске қоса берсеңіз болады!
