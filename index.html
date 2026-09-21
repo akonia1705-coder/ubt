@@ -1,3 +1,8 @@
+Міне, алынған Google Apps Script URL сілтемесі (`/exec`) толығымен интеграцияланған **`index.html`** файлының толық коды.
+
+Бұл кодты түгел көшіріп алып, GitHub-тағы `index.html` файлының ішіне ауыстырып қойыңыз.
+
+```html
 <!DOCTYPE html>
 <html lang="kk">
 <head>
@@ -26,6 +31,7 @@
         .result-box { text-align: center; display: none; }
         .result-score { font-size: 48px; color: #1a73e8; font-weight: bold; margin: 15px 0; }
         .result-details { font-size: 18px; color: #3c4043; margin-bottom: 20px; }
+        .status-msg { font-size: 14px; color: #5f6368; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -36,97 +42,103 @@
         <div class="progress-bar" id="progress-text">Оқушы мәліметін енгізіңіз</div>
     </div>
 
-    <!-- 1. Тіркелу блогы -->
+    <!-- 1. Тіркелу -->
     <div id="start-screen">
         <div class="user-info">
             <input type="text" id="student-name" placeholder="Оқушының аты-жөні" required>
-            <input type="text" id="student-class" placeholder="Сыныбы (мысалы: 11 «А»)" required>
+            <input type="text" id="student-class" placeholder="Сыныбы (мысалы: 11А)" required>
             <button class="start-btn" onclick="startQuiz()">Тестті бастау</button>
         </div>
     </div>
 
-    <!-- 2. Сұрақтар блогы -->
+    <!-- 2. Сұрақтар -->
     <div id="quiz-screen" style="display: none;">
         <div class="question" id="question-text">Сұрақ жүктелуде...</div>
         <div class="options" id="options-container"></div>
         <button class="next-btn" id="next-btn" onclick="nextQuestion()">Келесі сұрақ</button>
     </div>
 
-    <!-- 3. Нәтиже блогы -->
+    <!-- 3. Нәтиже -->
     <div id="result-screen" class="result-box">
         <h2>Тест аяқталды!</h2>
         <div class="result-score" id="result-percent">0%</div>
         <div class="result-details" id="result-text"></div>
+        <div class="status-msg" id="status-msg">Нәтиже жүйеге жіберілуде...</div>
+        <br>
         <button class="start-btn" onclick="location.reload()">Қайта тапсыру</button>
     </div>
 </div>
 
 <script>
-    // 50 СҰРАҚТАН ТҰРАТЫН ІШКІ БАЗА
+    // GOOGLE APPS SCRIPT WEB APP URL INTEGRATED
+    const googleScriptUrl = "https://script.google.com/macros/s/AKfycbyfggZs0xu7osvkbQwGBzzJsOyZByqIWzSTFGZvo01hHUgNv2w53PQTDY3VmMgnuYJG/exec";
+
+    // 11-СЫНЫП СҰРАҚТАР БАНКІ (50 СҰРАҚ)
     const questions = [
-        { q: "1. Реляциялық деректер базасы дегеніміз не?", options: ["A) Иерархиялық ағаш құрылымы", "B) Екіөлшемді кестелер жиынтығы", "C) Желілік байланыстар жиыны", "D) Граф түріндегі деректер"], correct: 1 },
-        { q: "2. Деректер базасындағы кестенің бағаны қалай аталады?", options: ["A) Жазба (Record)", "B) Жол (Row)", "C) Өріс (Field)", "D) Индекс (Index)"], correct: 2 },
-        { q: "3. Кестенің әрбір жазбасын бірегей түрде анықтайтын өріс:", options: ["A) Сыртқы кілт (Foreign Key)", "B) Бастапқы кілт (Primary Key)", "C) Индекс", "D) Составной ключ"], correct: 1 },
-        { q: "4. SQL тілінде кестеден деректерді таңдап алу командасы:", options: ["A) UPDATE", "B) INSERT", "C) SELECT", "D) DELETE"], correct: 2 },
-        { q: "5. SQL-де шарт бойынша деректерді сүзгілеу үшін қай оператор қолданылады?", options: ["A) WHERE", "B) ORDER BY", "C) GROUP BY", "D) HAVING"], correct: 0 },
-        { q: "6. Python тілінде тізімді (List) анықтау үшін қай жақша қолданылады?", options: ["A) { }", "B) ( )", "C) [ ]", "D) < >"], correct: 2 },
-        { q: "7. Python-да өзгермейтін (immutable) деректер түрі кайсысы?", options: ["A) List", "B) Dictionary", "C) Set", "D) Tuple"], correct: 3 },
-        { q: "8. Python-да тізімнің соңына жаңа элемент қосатын әдіс:", options: ["A) insert()", "B) append()", "C) add()", "D) extend()"], correct: 1 },
-        { q: "9. Алгоритмнің орындалу уақытының күрделілігін белгілейтін нотация:", options: ["A) Big O", "B) Big Alpha", "C) O-Min", "D) Algo-Check"], correct: 0 },
-        { q: "10. Сұрыптау алгоритмдерінің ішіндегі ең қарапайым әрі орташа күрделілігі O(n²) болатын түрі:", options: ["A) Быстрый сорт (Quick sort)", "B) Сортировка слиянием (Merge sort)", "C) Пузырьковая сортировка (Bubble sort)", "D) Пирамидальная сортировка"], correct: 2 },
-        { q: "11. HTML дегеніміз не?", options: ["A) Бағдарламалау тілі", "B) Гипермәтіндік белгілеу тілі", "C) Деректер базасы", "D) Операциялық жүйе"], correct: 1 },
-        { q: "12. CSS қызметі қандай?", options: ["A) Веб-беттің стилі мен безендірілуін сипаттау", "B) Серверлік логиканы жазу", "C) Деректерді сақтау", "D) Домендік атауды басқару"], correct: 0 },
-        { q: "13. JavaScript тілі не үшін қолданылады?", options: ["A) Кестелерді құру үшін", "B) Веб-бетке интерактивтілік пен динамика қосу үшін", "C) Тек мәтін жазу үшін", "D) Серверді қайта жүктеу үшін"], correct: 1 },
-        { q: "14. IP-мекенжайдың IPv4 стандарты неше биттен тұрады?", options: ["A) 16 бит", "B) 32 бит", "C) 64 бит", "D) 128 бит"], correct: 1 },
-        { q: "15. IPv6 стандартының разрядтылығы қанша?", options: ["A) 32 бит", "B) 64 бит", "C) 128 бит", "D) 256 бит"], correct: 2 },
-        { q: "16. Домендік атауларды IP-мекенжайларға түрлендіретін қызмет:", options: ["A) DHCP", "B) DNS", "C) FTP", "D) HTTP"], correct: 1 },
-        { q: "17. Компьютерлік желілердегі TCP/IP моделі неше деңгейден тұрады?", options: ["A) 3", "B) 4", "C) 7", "D) 5"], correct: 1 },
-        { q: "18. OSI моделі неше деңгейге бөлінеді?", options: ["A) 4", "B) 5", "C) 6", "D) 7"], correct: 3 },
-        { q: "19. Ақпаратты шифрлау және дешифрлау ғылымы қалай аталады?", options: ["A) Стеганография", "B) Криптография", "C) Топология", "D) Аналитика"], correct: 1 },
-        { q: "20. Асимметриялы шифрлауда қандай кілттер қолданылады?", options: ["A) Тек бір құпия кілт", "B) Ашық және жабық кілттер (Public & Private keys)", "C) Сессиялық кілт", "D) Кілт қолданылмайды"], correct: 1 },
-        { q: "21. Цифрлық қолтаңбаның (ЭЦП) басты мақсаты не?", options: ["A) Файлдың көлемін кішірейту", "B) Кұжаттың төпнұсқалығын және авторлығын растау", "C) Компьютерді вирустан қорғау", "D) Интернет жылдамдығын арттыру"], correct: 1 },
-        { q: "22. Жасанды интеллект саласындағы ML аббревиатурасының мағынасы:", options: ["A) Main Language", "B) Machine Learning (Машиналық оқыту)", "C) Mobile Logic", "D) Master Level"], correct: 1 },
-        { q: "23. Адам миының жұмысын имитациялайтын математикалық модель:", options: ["A) Нейрондық желілер (Neural Networks)", "B) Генетикалық алгоритмдер", "C) Шифрлау алгоритмдері", "D) Деректер ағашы"], correct: 0 },
-        { q: "24. Үлкен деректерді (Big Data) сипаттайтын «3V» концепциясы:", options: ["A) Volume, Velocity, Variety", "B) Value, Virtual, Visual", "C) Vector, Variable, Version", "D) View, Verification, Validity"], correct: 0 },
-        { q: "25. Заттар интернеті (IoT) дегеніміз не?", options: ["A) Әлеуметтік желілер жиынтығы", "B) Интернетке қосылған және өзара дерек алмасатын физикалық құрылғылар желісі", "C) Онлайн дүкендер жүйесі", "D) Компьютерлік ойындар сервері"], correct: 1 },
-        { q: "26. Бұлтты технологиялардың (Cloud Computing) SaaS моделі:", options: ["A) Infrastructure as a Service", "B) Platform as a Service", "C) Software as a Service (Бағдарламалық қамтамасыз ету қызмет ретінде)", "D) Storage as a Service"], correct: 2 },
-        { q: "27. Python-да шартты тексеру операторы кайсысы?", options: ["A) for", "B) while", "C) if", "D) def"], correct: 2 },
-        { q: "28. Python-да функцияларды анықтау үшін қай түйінді сөз қолданылады?", options: ["A) function", "B) def", "C) func", "D) create"], correct: 1 },
-        { q: "29. 1 Байтта неше Бит бар?", options: ["A) 2", "B) 8", "C) 1024", "D) 16"], correct: 1 },
-        { q: "30. Ақпараттық қауіпсіздіктің үш негізгі принципі (CIA):", options: ["A) Құпиялылық, Тұтастық, Қолжетімділік", "B) Жылдамдық, Сенімділік, Арзандық", "C) Шифрлау, Бұғаттау, Жою", "D) Толықтық, Нақтылық, Өзектілік"], correct: 0 },
-        { q: "31. Фишинг (Phishing) шабуылының мақсаты не?", options: ["A) Желілік жабдықтарды істен шығару", "B) Пайдаланушының құпия деректерін (пароль, карта) алдап алу", "C) Компьютерге вирус тарату", "D) Спам хабарламалар бұғаттау"], correct: 1 },
-        { q: "32. Серверге шамадан тыс сұраныс жіберіп, оны істен шығару шабуылы:", options: ["A) DDoS шабуыл", "B) Brute Force", "C) SQL Injection", "D) Cross-Site Scripting"], correct: 0 },
-        { q: "33. SQL-де жаңа жазба қосу командасы:", options: ["A) ADD", "B) INSERT INTO", "C) CREATE ROW", "D) PUSH"], correct: 1 },
-        { q: "34. SQL-де бар жазбаларды өзгерту командасы:", options: ["A) CHANGE", "B) MODIFY", "C) UPDATE", "D) EDIT"], correct: 2 },
-        { q: "35. Python-да экранға мәлімет шығару функциясы:", options: ["A) echo()", "B) print()", "C) write()", "D) output()"], correct: 1 },
-        { q: "36. Python-да пернетақтадан мәлімет енгізу функциясы:", options: ["A) scan()", "B) read()", "C) input()", "D) get()"], correct: 2 },
-        { q: "37. Стек (Stack) деректер құрылымы қандай принциппен жұмыс істейді?", options: ["A) FIFO (First In First Out)", "B) LIFO (Last In First Out)", "C) Random Access", "D) Priority Queue"], correct: 1 },
-        { q: "38. Кезектің (Queue) жұмыс істеу принципі:", options: ["A) LIFO", "B) FIFO (First In First Out)", "C) FILO", "D) Direct Access"], correct: 1 },
-        { q: "39. HTML-де ең үлкен тақырып стандарты қай тегпен беріледі?", options: ["A) <h6>", "B) <head>", "C) <h1>", "D) <header>"], correct: 2 },
-        { q: "40. Веб-беттегі гиперсілтеме жасау тегі:", options: ["A) <link>", "B) <a>", "C) <href>", "D) <url>"], correct: 1 },
-        { q: "41. Сурет қосуға арналған HTML тегі:", options: ["A) <picture>", "B) <img src='...'>", "C) <image>", "D) <media>"], correct: 1 },
-        { q: "42. Пиксель дегеніміз не?", options: ["A) Растрлық кескіннің ең кіші элементі", "B) Векторлық графика формуласы", "C) Дыбыс жиілігінің бірлігі", "D) Желі жылдамдығы"], correct: 0 },
-        { q: "43. RGB түстік моделінің негізгі түстері:", options: ["A) Қызыл, Жасыл, Көк (Red, Green, Blue)", "B) Сары, Қара, Ақ", "C) Циан, Маджента, Сары", "D) Қара-ақ спектр"], correct: 0 },
-        { q: "44. Компьютерлік графиканың қай түрі масштаблағанда сапасын жоғалтпайды?", options: ["A) Растрлық", "B) Векторлық", "C) Трехмерная (3D)", "D) Пиксельдік"], correct: 1 },
-        { q: "45. Компьютердің сыртқы жадына не жатады?", options: ["A) ОЗУ (RAM)", "B) Кэш-жад", "C) Регистрлер", "D) SSD / Қатқыл диск (HDD)"], correct: 3 },
-        { q: "46. Жедел жадтың (RAM) басты ерекшелігі:", options: ["A) Тоқ өшкенде мәлімет сақталмайды (энергияға тәуелді)", "B) Мәліметті мәңгі сақтайды", "C) Тек оқуға арналған", "D) Өте баяу жұмыс істейді"], correct: 0 },
-        { q: "47. Компьютерлік желідегі «Топология» деген не?", options: ["A) Желі жылдамдығы", "B) Компьютерлердің өзара физикалық немесе логикалық орналасу схемасы", "C) Кабель түрі", "D) Сервердің қуаты"], correct: 1 },
-        { q: "48. «Жұлдызша» (Star) топологиясының басты артықшылығы:", options: ["A) Орталық хаб/свитч істен шықса желі жұмыс істей береді", "B) Бір компьютер бұзылса, қалғандары жұмысын жалғастыра береді", "C) Кабель өте аз кетеді", "D) Терминатор қолданылады"], correct: 1 },
-        { q: "49. Сұрыптау алгоритмінің тұрақтылығы (Stability) нені білдіреді?", options: ["A) Жадты мүлдем жұмсамауын", "B) Бірдей кілттері бар элементтердің бастапқы ретінің сақталуын", "C) Алгоритмнің тоқтамауын", "D) Тек санға жұмыс істеуін"], correct: 1 },
-        { q: "50. Python-да екі айнымалының мәнін салыстыру (теңдік) операторы:", options: ["A) =", "B) ==", "C) IS", "D) EQUAL"], correct: 1 }
+        { q: "Реляциялық деректер базасы дегеніміз не?", options: ["A) Иерархиялық ағаш құрылымы", "B) Екіөлшемді кестелер жиынтығы", "C) Желілік байланыстар жиыны", "D) Граф түріндегі деректер"], correct: "B", topic: "Деректер базасы" },
+        { q: "Деректер базасындағы кестенің бағаны қалай аталады?", options: ["A) Жазба (Record)", "B) Жол (Row)", "C) Өріс (Field)", "D) Индекс (Index)"], correct: "C", topic: "Деректер базасы" },
+        { q: "Кестенің әрбір жазбасын бірегей түрде анықтайтын өріс:", options: ["A) Сыртқы кілт (Foreign Key)", "B) Бастапқы кілт (Primary Key)", "C) Индекс", "D) Құрама кілт"], correct: "B", topic: "Деректер базасы" },
+        { q: "SQL тілінде кестеден деректерді таңдап алу командасы:", options: ["A) UPDATE", "B) INSERT", "C) SELECT", "D) DELETE"], correct: "C", topic: "SQL" },
+        { q: "SQL-де шарт бойынша деректерді сүзгілеу үшін қай оператор қолданылады?", options: ["A) WHERE", "B) ORDER BY", "C) GROUP BY", "D) HAVING"], correct: "A", topic: "SQL" },
+        { q: "Python тілінде тізімді (List) анықтау үшін қай жақша қолданылады?", options: ["A) { }", "B) ( )", "C) [ ]", "D) < >"], correct: "C", topic: "Python" },
+        { q: "Python-да өзгермейтін (immutable) деректер түрі қайсысы?", options: ["A) List", "B) Dictionary", "C) Set", "D) Tuple"], correct: "D", topic: "Python" },
+        { q: "Python-да тізімнің соңына жаңа элемент қосатын әдіс:", options: ["A) insert()", "B) append()", "C) add()", "D) extend()"], correct: "B", topic: "Python" },
+        { q: "Алгоритмнің орындалу уақытының күрделілігін белгілейтін нотация:", options: ["A) Big O", "B) Big Alpha", "C) O-Min", "D) Algo-Check"], correct: "A", topic: "Алгоритмдер" },
+        { q: "Сұрыптау алгоритмдерінің ішіндегі орташа күрделілігі O(n²) болатын түрі:", options: ["A) Тез сұрыптау (Quick sort)", "B) Бөлшектеп сұрыптау (Merge sort)", "C) Көпіршікті сұрыптау (Bubble sort)", "D) Пирамидалық сұрыптау"], correct: "C", topic: "Алгоритмдер" },
+        { q: "HTML дегеніміз не?", options: ["A) Бағдарламалау тілі", "B) Гипермәтіндік белгілеу тілі", "C) Деректер базасы", "D) Операциялық жүйе"], correct: "B", topic: "Веб-технологиялар" },
+        { q: "CSS қызметі қандай?", options: ["A) Веб-беттің стилі мен безендірілуін сипаттау", "B) Серверлік логиканы жазу", "C) Деректерді сақтау", "D) Домендік атауды басқару"], correct: "A", topic: "Веб-технологиялар" },
+        { q: "JavaScript тілі не үшін қолданылады?", options: ["A) Кестелерді құру үшін", "B) Веб-бетке интерактивтілік пен динамика қосу үшін", "C) Тек мәтін жазу үшін", "D) Серверді қайта жүктеу үшін"], correct: "B", topic: "Веб-технологиялар" },
+        { q: "IP-мекенжайдың IPv4 стандарты неше биттен тұрады?", options: ["A) 16 бит", "B) 32 бит", "C) 64 бит", "D) 128 бит"], correct: "B", topic: "Желілер" },
+        { q: "IPv6 стандартының разрядтылығы қанша?", options: ["A) 32 бит", "B) 64 бит", "C) 128 бит", "D) 256 бит"], correct: "C", topic: "Желілер" },
+        { q: "Домендік атауларды IP-мекенжайларға түрлендіретін қызмет:", options: ["A) DHCP", "B) DNS", "C) FTP", "D) HTTP"], correct: "B", topic: "Желілер" },
+        { q: "Компьютерлік желілердегі TCP/IP моделі неше деңгейден тұрады?", options: ["A) 3", "B) 4", "C) 7", "D) 5"], correct: "B", topic: "Желілер" },
+        { q: "OSI моделі неше деңгейге бөлінеді?", options: ["A) 4", "B) 5", "C) 6", "D) 7"], correct: "D", topic: "Желілер" },
+        { q: "Ақпаратты шифрлау және дешифрлау ғылымы қалай аталады?", options: ["A) Стеганография", "B) Криптография", "C) Топология", "D) Аналитика"], correct: "B", topic: "Ақпараттық қауіпсіздік" },
+        { q: "Асимметриялы шифрлауда қандай кілттер қолданылады?", options: ["A) Тек бір құпия кілт", "B) Ашық және жабық кілттер (Public & Private)", "C) Сессиялық кілт", "D) Кілт қолданылмайды"], correct: "B", topic: "Ақпараттық қауіпсіздік" },
+        { q: "Цифрлық қолтаңбаның (ЭЦП) басты мақсаты не?", options: ["A) Файлдың көлемін кішірейту", "B) Құжаттың түпнұсқалығын және авторлығын растау", "C) Компьютерді вирустан қорғау", "D) Интернет жылдамдығын арттыру"], correct: "B", topic: "Ақпараттық қауіпсіздік" },
+        { q: "Жасанды интеллект саласындағы ML аббревиатурасының мағынасы:", options: ["A) Main Language", "B) Machine Learning (Машиналық оқыту)", "C) Mobile Logic", "D) Master Level"], correct: "B", topic: "Жасанды интеллект" },
+        { q: "Адам миының жұмысын имитациялайтын математикалық модель:", options: ["A) Нейрондық желілер (Neural Networks)", "B) Генетикалық алгоритмдер", "C) Шифрлау алгоритмдері", "D) Деректер ағашы"], correct: "A", topic: "Жасанды интеллект" },
+        { q: "Үлкен деректерді (Big Data) сипаттайтын «3V» концепциясы:", options: ["A) Volume, Velocity, Variety", "B) Value, Virtual, Visual", "C) Vector, Variable, Version", "D) View, Verification, Validity"], correct: "A", topic: "Big Data" },
+        { q: "Заттар интернеті (IoT) дегеніміз не?", options: ["A) Әлеуметтік желілер жиынтығы", "B) Интернетке қосылған физикалық құрылғылар желісі", "C) Онлайн дүкендер жүйесі", "D) Компьютерлік ойындар сервері"], correct: "B", topic: "Заманауи IT" },
+        { q: "Бұлтты технологиялардың (Cloud) SaaS моделі:", options: ["A) Infrastructure as a Service", "B) Platform as a Service", "C) Software as a Service (БҚ қызмет ретінде)", "D) Storage as a Service"], correct: "C", topic: "Бұлтты технологиялар" },
+        { q: "Python-да шартты тексеру операторы қайсысы?", options: ["A) for", "B) while", "C) if", "D) def"], correct: "C", topic: "Python" },
+        { q: "Python-да функцияларды анықтау үшін қай түйінді сөз қолданылады?", options: ["A) function", "B) def", "C) func", "D) create"], correct: "B", topic: "Python" },
+        { q: "1 Байтта неше Бит бар?", options: ["A) 2", "B) 8", "C) 1024", "D) 16"], correct: "B", topic: "Ақпарат теориясы" },
+        { q: "Ақпараттық қауіпсіздіктің үш негізгі принципі (CIA):", options: ["A) Құпиялылық, Тұтастық, Қолжетімділік", "B) Жылдамдық, Сенімділік, Арзандық", "C) Шифрлау, Бұғаттау, Жою", "D) Толықтық, Нақтылық, Өзектілік"], correct: "A", topic: "Ақпараттық қауіпсіздік" },
+        { q: "Фишинг (Phishing) шабуылының мақсаты не?", options: ["A) Жабдықтарды істен шығару", "B) Құпия деректерді алдап алу", "C) Вирус тарату", "D) Спам бұғаттау"], correct: "B", topic: "Ақпараттық қауіпсіздік" },
+        { q: "Серверге шамадан тыс сұраныс жіберіп, оны істен шығару шабуылы:", options: ["A) DDoS шабуыл", "B) Brute Force", "C) SQL Injection", "D) Cross-Site Scripting"], correct: "A", topic: "Ақпараттық қауіпсіздік" },
+        { q: "SQL-де жаңа жазба қосу командасы:", options: ["A) ADD", "B) INSERT INTO", "C) CREATE ROW", "D) PUSH"], correct: "B", topic: "SQL" },
+        { q: "SQL-де бар жазбаларды өзгерту командасы:", options: ["A) CHANGE", "B) MODIFY", "C) UPDATE", "D) EDIT"], correct: "C", topic: "SQL" },
+        { q: "Python-да экранға мәлімет шығару функциясы:", options: ["A) echo()", "B) print()", "C) write()", "D) output()"], correct: "B", topic: "Python" },
+        { q: "Python-да пернетақтадан мәлімет енгізу функциясы:", options: ["A) scan()", "B) read()", "C) input()", "D) get()"], correct: "C", topic: "Python" },
+        { q: "Стек (Stack) деректер құрылымы қандай принциппен жұмыс істейді?", options: ["A) FIFO (First In First Out)", "B) LIFO (Last In First Out)", "C) Random Access", "D) Priority Queue"], correct: "B", topic: "Алгоритмдер" },
+        { q: "Кезектің (Queue) жұмыс істеу принципі:", options: ["A) LIFO", "B) FIFO (First In First Out)", "C) FILO", "D) Direct Access"], correct: "B", topic: "Алгоритмдер" },
+        { q: "HTML-де ең үлкен тақырып стандарты қай тегпен беріледі?", options: ["A) <h6>", "B) <head>", "C) <h1>", "D) <header>"], correct: "C", topic: "Веб-технологиялар" },
+        { q: "Веб-беттегі гиперсілтеме жасау тегі:", options: ["A) <link>", "B) <a>", "C) <href>", "D) <url>"], correct: "B", topic: "Веб-технологиялар" },
+        { q: "Сурет қосуға арналған HTML тегі:", options: ["A) <picture>", "B) <img src='...'>", "C) <image>", "D) <media>"], correct: "B", topic: "Веб-технологиялар" },
+        { q: "Пиксель дегеніміз не?", options: ["A) Растрлық кескіннің ең кіші элементі", "B) Векторлық графика формуласы", "C) Дыбыс жиілігінің бірлігі", "D) Желі жылдамдығы"], correct: "A", topic: "Компьютерлік графика" },
+        { q: "RGB түстік моделінің негізгі түстері:", options: ["A) Қызыл, Жасыл, Көк (Red, Green, Blue)", "B) Сары, Қара, Ақ", "C) Циан, Маджента, Сары", "D) Қара-ақ спектр"], correct: "A", topic: "Компьютерлік графика" },
+        { q: "Масштаблағанда сапасын жоғалтпайтын графика түрі:", options: ["A) Растрлық", "B) Векторлық", "C) 3D графика", "D) Пиксельдік"], correct: "B", topic: "Компьютерлік графика" },
+        { q: "Компьютердің сыртқы жадына не жатады?", options: ["A) ОЗУ (RAM)", "B) Кэш-жад", "C) Регистрлер", "D) SSD / Қатқыл диск (HDD)"], correct: "D", topic: "Компьютер архитектурасы" },
+        { q: "Жедел жадтың (RAM) басты ерекшелігі:", options: ["A) Тоқ өшкенде мәлімет сақталмайды (энергияға тәуелді)", "B) Мәліметті мәңгі сақтайды", "C) Тек оқуға арналған", "D) Өте баяу жұмыс істейді"], correct: "A", topic: "Компьютер архитектурасы" },
+        { q: "Компьютерлік желідегі «Топология» деген не?", options: ["A) Желі жылдамдығы", "B) Компьютерлердің өзара орналасу схемасы", "C) Кабель түрі", "D) Сервер қуаты"], correct: "B", topic: "Желілер" },
+        { q: "«Жұлдызша» (Star) топологиясының басты артықшылығы:", options: ["A) Орталық хаб істен шықса желі жұмыс істей береді", "B) Бір компьютер бұзылса, қалғандары жұмысын жалғастыра береді", "C) Кабель аз кетеді", "D) Терминатор қолданылады"], correct: "B", topic: "Желілер" },
+        { q: "Сұрыптау алгоритмінің тұрақтылығы (Stability) нені білдіреді?", options: ["A) Жадты жұмсамауын", "B) Бірдей кілттері бар элементтердің бастапқы ретінің сақталуын", "C) Алгоритмнің тоқтамауын", "D) Тек санға жұмыс істеуін"], correct: "B", topic: "Алгоритмдер" },
+        { q: "Python-да екі айнымалының мәнін салыстыру (теңдік) операторы:", options: ["A) =", "B) ==", "C) IS", "D) EQUAL"], correct: "B", topic: "Python" }
     ];
 
     let currentQ = 0;
     let score = 0;
     let studentName = "";
     let studentClass = "";
+    let userAnswers = [];
 
     function startQuiz() {
         studentName = document.getElementById("student-name").value.trim();
         studentClass = document.getElementById("student-class").value.trim();
 
         if (!studentName || !studentClass) {
-            alert("Өтініш, аты-жөніңіз бен сыныбыңызды толық енгізіңіз!");
+            alert("Өтініш, аты-жөніңіз бен сыныбыңызды енгізіңіз!");
             return;
         }
 
@@ -138,32 +150,46 @@
     function loadQuestion() {
         const qData = questions[currentQ];
         document.getElementById("progress-text").innerText = `Сұрақ ${currentQ + 1} / ${questions.length}`;
-        document.getElementById("question-text").innerText = qData.q;
+        document.getElementById("question-text").innerText = `${currentQ + 1}. ${qData.q}`;
         
         const optionsBox = document.getElementById("options-container");
         optionsBox.innerHTML = "";
         document.getElementById("next-btn").style.display = "none";
 
+        const letterMap = ["A", "B", "C", "D"];
+
         qData.options.forEach((opt, idx) => {
             const btn = document.createElement("button");
             btn.className = "option-btn";
             btn.innerText = opt;
-            btn.onclick = () => selectOption(btn, idx, qData.correct);
+            btn.onclick = () => selectOption(btn, letterMap[idx], qData.correct, qData);
             optionsBox.appendChild(btn);
         });
     }
 
-    function selectOption(btn, selectedIdx, correctIdx) {
+    function selectOption(btn, selectedLetter, correctLetter, qData) {
         const allBtns = document.querySelectorAll(".option-btn");
         allBtns.forEach(b => b.disabled = true);
 
-        if (selectedIdx === correctIdx) {
+        const isCorrect = (selectedLetter === correctLetter);
+        if (isCorrect) {
             btn.classList.add("correct");
             score++;
         } else {
             btn.classList.add("wrong");
-            allBtns[correctIdx].classList.add("correct");
+            const letterMap = ["A", "B", "C", "D"];
+            const correctIdx = letterMap.indexOf(correctLetter);
+            if(correctIdx !== -1) allBtns[correctIdx].classList.add("correct");
         }
+
+        userAnswers.push({
+            qNum: currentQ + 1,
+            topic: qData.topic,
+            question: qData.q,
+            selected: selectedLetter,
+            correct: correctLetter,
+            isCorrect: isCorrect
+        });
 
         document.getElementById("next-btn").style.display = "block";
     }
@@ -186,10 +212,38 @@
         document.getElementById("result-percent").innerText = `${percent}%`;
         document.getElementById("result-text").innerHTML = `
             <strong>Оқушы:</strong> ${studentName} (${studentClass})<br><br>
-            <strong>Нәтиже:</strong> 50 сұрақтың <strong>${score}</strong>-сіне дұрыс жауап берілді.
+            <strong>Нәтиже:</strong> ${questions.length} сұрақтың <strong>${score}</strong>-сіне дұрыс жауап берілді.
         `;
+
+        sendResultsToGoogle(percent);
+    }
+
+    function sendResultsToGoogle(percent) {
+        const payload = {
+            studentName: studentName,
+            studentClass: studentClass,
+            grade: "11",
+            score: score,
+            total: questions.length,
+            percent: percent,
+            answers: userAnswers
+        };
+
+        fetch(googleScriptUrl, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        }).then(() => {
+            document.getElementById("status-msg").innerText = "✓ Нәтиже мұғалім базасына сақталды!";
+        }).catch(err => {
+            document.getElementById("status-msg").innerText = "❌ Дерек жіберуде қате шықты.";
+            console.error(err);
+        });
     }
 </script>
 
 </body>
 </html>
+
+```
